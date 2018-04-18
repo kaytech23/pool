@@ -8,6 +8,8 @@ import pyglet
 from pyglet.gl import *
 from pyglet.window import key, mouse
 
+import random
+
 from pyglet import gl
 
 import pymunk
@@ -29,7 +31,7 @@ def calculate_points(length, x=0, y=0):
 
 
 def calculate_gaps(ball_size):
-    mid_gap = ball_size * 0.9
+    mid_gap = ball_size
     corner_gap = ((mid_gap ** 2) * 2) ** .5
     return corner_gap, mid_gap
 
@@ -113,6 +115,8 @@ class Main(pyglet.window.Window):
                 # pionowe
                 pymunk.Segment(self.space.static_body, (x1, y1 + corner_gap), (x1, y2 - corner_gap), 0),
                 # pymunk.Segment(self.space.static_body, (x1 + ball_size, y1 + corner_gap + ball_size), (x1 + ball_size, y2 - corner_gap - ball_size), 0),
+                # pymunk.Segment(self.space.static_body, (x1, y1 + corner_gap),
+                #                (x1 + ball_size, y1 + corner_gap + ball_size), 0),
                 pymunk.Segment(self.space.static_body, (x3, y1 + corner_gap), (x3, y2 - corner_gap), 0),
 
                 # poziome
@@ -152,9 +156,11 @@ class Main(pyglet.window.Window):
 
         self.cue_ball = self.create_ball(radius, x, y, self.colors["white"], self.collision_types["cue"])
         for i in range(8):
-            self.create_ball(radius, 300 + 1 * 50, 105 + i * (ball_size + .1), self.colors["red"],
+            z1 = random.randint(1, 5)
+            z2 = random.randint(1, 3)
+            self.create_ball(radius, 300 + z1 * 50, 105 + z2 * (ball_size + .1), self.colors["red"],
                              self.collision_types["ball"])
-            self.create_ball(radius, 300 + 2 * 50, 105 + i * (ball_size + .1), self.colors["blue"],
+            self.create_ball(radius, 300 + z2 * 50, 105 + z2 * (ball_size + .1), self.colors["blue"],
                              self.collision_types["ball"])
 
 
