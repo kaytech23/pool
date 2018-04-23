@@ -1,6 +1,7 @@
 import pyglet
 import pymunk.pyglet_util
 import pool_world
+import time
 
 
 class Main(pyglet.window.Window):
@@ -15,9 +16,22 @@ class Main(pyglet.window.Window):
         self.world = pool_world.World()
         self.draw_options = pymunk.pyglet_util.DrawOptions()
         self.draw_options.flags = self.draw_options.DRAW_SHAPES
+        self.hit = False
+
+        self.start_time = time.time()
 
     def update(self, dt):
-        self.world.update(1)
+        step_dt = 1 / (dt * 40000)
+        # print(step_dt)
+        x = 0
+        while x < dt:
+            x += step_dt
+            self.world.update(step_dt)
+
+        elapsed = time.time() - self.start_time
+        if 2 < elapsed and not self.hit:
+            self.world.hit(1, 1)
+            self.hit = True
 
     def on_draw(self):
         self.clear()
