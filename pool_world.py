@@ -11,25 +11,25 @@
 # simulation_state = finished, in-progress
 # events: ball pocketed, simulation finished, cue_ball_hit
 import pymunk
+import random
 from events import Events
 
 # https://github.com/viblo/pymunk/blob/master/examples/shapes_for_draw_demos.py
 
 
-def calculate_points(length, x=0, y=0):
-    x1 = x
-    x2 = x1 + length
-    x3 = x2 + length
-    y1 = y
-    y2 = y1 + length
-    return x1, x2, x3, y1, y2
-
-
-def calculate_gaps(ball_size):
-    mid_gap = ball_size
-    corner_gap = ((mid_gap ** 2) * 2) ** .5
-    return corner_gap, mid_gap
-
+# def calculate_points(length, x=0, y=0):
+#     x1 = x
+#     x2 = x1 + length
+#     x3 = x2 + length
+#     y1 = y
+#     y2 = y1 + length
+#     return x1, x2, x3, y1, y2
+#
+#
+# def calculate_gaps(ball_size):
+#     mid_gap = ball_size
+#     corner_gap = ((mid_gap ** 2) * 2) ** .5
+#     return corner_gap, mid_gap
 
 class World(pymunk.Space):
 
@@ -48,20 +48,37 @@ class World(pymunk.Space):
         "pocket": 4
     }
 
-
     def __init__(self):
+        super(World, self).__init__()
         self.game_events = Events()
-        pymunk.Space.__init__(self)
         self.damping = 0.35
+        self.state = False
 
         # h = self.add_collision_handler(1, 2)
         # h.begin = self.pocketed
         # self.create_table(300, 12)
 
-        self.reset_table_data(550, 12)
+        self.cue_ball = None
+        self.reset_table_data(600, 12)
         self.create_balls(12)
 
 
+
+        h1 = self.add_collision_handler(self.collision_types["ball"], self.collision_types["pocket"])
+        h1.begin = self.pocketed
+        h2 = self.add_collision_handler(self.collision_types["cue"], self.collision_types["pocket"])
+        h2.begin = self.pocketed
+
+
+        self.sleep_time_threshold = 0.3
+        self.idle_speed_threshold = 0.1
+
+    def pocketed(self, arbiter, space, data):
+        shape = arbiter.shapes[0]
+        space.remove(shape, shape.body)
+        # print("ball pocketed: ")
+        print("ball pocketed: " + str(shape.collision_type))
+        return True
 
     def reset_table_data(self, inside_table_length, ball_diameter):
 
@@ -116,11 +133,6 @@ class World(pymunk.Space):
             (table_length - corner_shift - ball_diameter, table_width - ball_diameter)
         ]
 
-        # mass = 100
-        # moment = pymunk.moment_for_poly(mass, cussions["Right"])
-        # body = pymunk.Body(mass, moment, body_type=pymunk.Body.STATIC)
-
-
         lines = [
             pymunk.Poly(self.static_body, cussions["Left"]),
             pymunk.Poly(self.static_body, cussions["Right"]),
@@ -136,6 +148,33 @@ class World(pymunk.Space):
             # self.add(body, line)
         self.add(lines)
 
+        import operator
+
+
+        pocket_sensor_diameter = 9
+        pockets_coordinates = {}
+        pockets_coordinates["Top_Left"] = tuple(map(operator.add, table_corners["Top_Left"], (corner_shift / 2, -corner_shift /2)))
+        pockets_coordinates["Top_Right"] = tuple(map(operator.add, table_corners["Top_Right"], (-corner_shift / 2, -corner_shift /2)))
+        pockets_coordinates["Down_Left"] = tuple(map(operator.add, table_corners["Down_Left"], (corner_shift / 2, corner_shift /2)))
+        pockets_coordinates["Down_Right"] = tuple(map(operator.add, table_corners["Down_Right"], (-corner_shift / 2, corner_shift / 2)))
+        table_half_length = table_length / 2
+        pockets_coordinates["Top_Mid"] = (table_half_length, table_width)
+        pockets_coordinates["Down_Mid"] = (table_half_length, 0)
+        pockets = [
+                pymunk.Circle(self.static_body, pocket_sensor_diameter, pockets_coordinates["Top_Left"]),
+                pymunk.Circle(self.static_body, pocket_sensor_diameter, pockets_coordinates["Top_Right"]),
+                pymunk.Circle(self.static_body, pocket_sensor_diameter, pockets_coordinates["Down_Left"]),
+                pymunk.Circle(self.static_body, pocket_sensor_diameter, pockets_coordinates["Down_Right"]),
+                pymunk.Circle(self.static_body, pocket_sensor_diameter, pockets_coordinates["Top_Mid"]),
+                pymunk.Circle(self.static_body, pocket_sensor_diameter, pockets_coordinates["Down_Mid"])
+                ]
+
+        for pocket in pockets:
+            pocket.elasticity = 1.0
+            pocket.friction = 0.0
+            pocket.sensor = True
+            pocket.collision_type = self.collision_types["pocket"]
+        self.add(pockets)
 
         # calc corner gap shift
         # pockets coordinates
@@ -143,19 +182,19 @@ class World(pymunk.Space):
         pass
 
     def create_balls(self, ball_size):
-        x = 500
+        x = 100
         y = 100
         radius = ball_size / 2
 
         self.cue_ball = self.create_ball(radius, x, y, self.colors["white"], self.collision_types["cue"])
 
-        # for i in range(8):
-        #     z1 = random.randint(1, 5)
-        #     z2 = random.randint(1, 3)
-        #     self.create_ball(radius, 300 + z1 * 50, 105 + z2 * (ball_size + .1), self.colors["red"],
-        #                      self.collision_types["ball"])
-        #     self.create_ball(radius, 300 + z2 * 50, 105 + z2 * (ball_size + .1), self.colors["blue"],
-        #                      self.collision_types["ball"])
+        for i in range(8):
+            z1 = random.randint(1, 5)
+            z2 = random.randint(1, 3)
+            self.create_ball(radius, 300 + z1 * 50, 105 + z2 * (ball_size + .1), self.colors["red"],
+                             self.collision_types["ball"])
+            self.create_ball(radius, 300 + z2 * 50, 105 + z2 * (ball_size + .1), self.colors["blue"],
+                             self.collision_types["ball"])
 
 
         # black_ball = self.create_ball(radius, x, y)
@@ -166,49 +205,12 @@ class World(pymunk.Space):
         body = pymunk.Body(mass, moment)
         body.position = (x, y)
         shape = pymunk.Circle(body, radius, (0, 0))
-        shape.friction = 1.0
+        shape.friction = 0.0
         shape.elasticity = 1.0
         shape.color = color
-        # shape.collision_type = collision_type
+        shape.collision_type = collision_type
         self.add(body, shape)
         return body
-
-
-    def create_table(self, length, ball_size, x_shift=0, y_shift=0):
-
-        x1, x2, x3, y1, y2 = calculate_points(length, x_shift, y_shift)
-        corner_gap, mid_gap = calculate_gaps(ball_size)
-
-        pocket_sensor_dim = 3
-        pocket_sensor_dim2 = 8
-
-        xa = x1
-        xb = x1 + 12
-
-        ya = y1 + corner_gap
-        yb = y2 - corner_gap
-
-        lines = [
-            # pionowe
-            # pymunk.Segment(self.static_body, (x1, y1 + corner_gap), (x1, y2 - corner_gap), 0),
-            pymunk.Poly(self.static_body, [(xa, ya), (xb, yb - 12), (xa, yb), (xb, ya + 12)]),
-            # pymunk.Segment(self.space.static_body, (x1 + ball_size, y1 + corner_gap + ball_size), (x1 + ball_size, y2 - corner_gap - ball_size), 0),
-            # pymunk.Segment(self.space.static_body, (x1, y1 + corner_gap),
-            #                (x1 + ball_size, y1 + corner_gap + ball_size), 0),
-            pymunk.Segment(self.static_body, (x3, y1 + corner_gap), (x3, y2 - corner_gap), 0),
-
-            # poziome
-            pymunk.Segment(self.static_body, (x1 + corner_gap, y1), (x2 - mid_gap, y1), 0),
-            # pymunk.Segment(self.space.static_body, (x1 + corner_gap + ball_size, y1 + ball_size), (x2 - mid_gap, y1 + ball_size), 0),
-            pymunk.Segment(self.static_body, (x2 + mid_gap, y1), (x3 - corner_gap, y1), 0),
-            pymunk.Segment(self.static_body, (x1 + corner_gap, y2), (x2 - mid_gap, y2), 0),
-            pymunk.Segment(self.static_body, (x2 + mid_gap, y2), (x3 - corner_gap, y2), 0),
-
-        ]
-        for line in lines:
-            line.elasticity = 1.0
-            line.friction = 0.0
-        self.add(lines)
 
     def add_on_cuehit_handler(self, handler):
         self.game_events.on_cuehit += handler
@@ -234,16 +236,40 @@ class World(pymunk.Space):
 
     # strokes
     def hit(self, angle, force):
-        f = 180000.0
-        self.cue_ball.apply_impulse_at_local_point((f/3, f/4))
-        pass
+        if self.state:
+            pass
+        else:
+            self.state = True
+            self.cue_ball.angle = angle
+            self.cue_ball.apply_impulse_at_local_point((force, 0.0))
 
-    def update(self, steps):
-        self.step(steps)
-        pass
 
+    def update(self, dt):
+        step_dt = 1 / (dt * 40000)
+        x = 0
+        while x < dt:
+            x += step_dt
+            self.step(step_dt)
+        # self.check_state()
+
+    def check_state(self):
+        is_sleeping = True
+        for body in self.bodies:
+            if not body.is_sleeping:
+                is_sleeping = False
+                break
+        if is_sleeping:
+            # print("Is sleeping...")
+            self.state = False
+            return True
+        return False
 
     def update_until_finish(self):
+        step_dt = 0.0015
+        self.step(step_dt)
+
+        while self.check_state():
+            self.step(step_dt)
         pass
 
     def hit_and_update_until_finished(self, angle, force):
@@ -253,7 +279,7 @@ class World(pymunk.Space):
 
 
     # simulation
-    def pocketed(self, arbiter, space, data):
-        self.ball_pocketed()
-        return True
+    # def pocketed(self, arbiter, space, data):
+    #     self.ball_pocketed()
+    #     return True
 
