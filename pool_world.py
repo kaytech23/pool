@@ -33,25 +33,32 @@ from events import Events
 
 class World(pymunk.Space):
 
+    CUE_BALL = 1
+    BLACK_BALL = 2
+    RED_BALL = 3
+    BLUE_BALL = 4
+
     colors = {
-        "red": (124, 3, 0, 125),
+        "red": (255, 0, 0, 255),
         "white": (255, 255, 255, 255),
-        "black": (1, 4, 6, 7),
-        "blue": (0, 0, 255, 255),
-        "green": (54, 54, 54, 54)
+        "black": (1, 1, 1, 255),
+        "blue": (0, 0, 255, 255)
         }
 
     collision_types = {
-        "ball": 1,
-        "cue": 2,
-        "wall": 3,
-        "pocket": 4
+        "cue_ball": 1,
+        "red_ball": 2,
+        "blue_ball": 3,
+        "black_ball": 4,
+        "cushion": 11,
+        "pocket": 10
     }
 
     def __init__(self):
         super(World, self).__init__()
         self.game_events = Events()
-        self.damping = 0.35
+        self.damping = 0.25
+        # self.gravity = (-1000, 0)
         self.state = False
 
         # h = self.add_collision_handler(1, 2)
@@ -59,26 +66,71 @@ class World(pymunk.Space):
         # self.create_table(300, 12)
 
         self.cue_ball = None
+        self.black_ball = None
+        self.red_balls = []
+        self.blue_balls = []
+        self.pockets = []
+
+        self.pocketed_balls = []
+        self.cue_ball_collisions = []
+
         self.reset_table_data(600, 12)
         self.create_balls(12)
 
-
-
-        h1 = self.add_collision_handler(self.collision_types["ball"], self.collision_types["pocket"])
-        h1.begin = self.pocketed
-        h2 = self.add_collision_handler(self.collision_types["cue"], self.collision_types["pocket"])
-        h2.begin = self.pocketed
-
+        h1 = self.add_collision_handler(self.collision_types["red_ball"], self.collision_types["pocket"])
+        h1.begin = self.red_ball_pocketed
+        h2 = self.add_collision_handler(self.collision_types["blue_ball"], self.collision_types["pocket"])
+        h2.begin = self.blue_ball_pocketed
+        h3 = self.add_collision_handler(self.collision_types["cue_ball"], self.collision_types["pocket"])
+        h3.begin = self.cueball_pocketed
+        h4 = self.add_collision_handler(self.collision_types["cue_ball"], self.collision_types["red_ball"])
+        h4.begin = self.cueball_hit
+        h5 = self.add_collision_handler(self.collision_types["cue_ball"], self.collision_types["blue_ball"])
+        h5.begin = self.cueball_hit
 
         self.sleep_time_threshold = 0.3
         self.idle_speed_threshold = 0.1
 
-    def pocketed(self, arbiter, space, data):
+
+
+    def red_ball_pocketed(self, arbiter, space, data):
+
         shape = arbiter.shapes[0]
         space.remove(shape, shape.body)
+        self.red_balls.remove(shape.body)
+        self.pocketed_balls.append(World.RED_BALL)
+        print(shape.body.position)
         # print("ball pocketed: ")
         print("ball pocketed: " + str(shape.collision_type))
+        self.game_events.on_ball_pocketed(1)
         return True
+
+    def blue_ball_pocketed(self, arbiter, space, data):
+
+        shape = arbiter.shapes[0]
+        space.remove(shape, shape.body)
+        print(shape.body.position)
+        # print("ball pocketed: ")
+        print("ball pocketed: " + str(shape.collision_type))
+        self.game_events.on_ball_pocketed(1)
+        return True
+
+    def cueball_pocketed(self, arbiter, space, data):
+
+        shape = arbiter.shapes[0]
+        # space.remove(shape, shape.body)
+        # print("ball pocketed: ")
+        print("cue ball pocketed: " + str(shape.collision_type))
+        return True
+
+    def cueball_hit(self, arbiter, space, data):
+
+        shape = arbiter.shapes[0]
+        # space.remove(shape, shape.body)
+        # print("ball pocketed: ")
+        print("cue_ball hit: " + str(shape.collision_type))
+        return True
+
 
     def reset_table_data(self, inside_table_length, ball_diameter):
 
@@ -174,6 +226,7 @@ class World(pymunk.Space):
             pocket.friction = 0.0
             pocket.sensor = True
             pocket.collision_type = self.collision_types["pocket"]
+            self.pockets.append(pocket.body.position)
         self.add(pockets)
 
         # calc corner gap shift
@@ -181,26 +234,38 @@ class World(pymunk.Space):
         # table corners coordinates
         pass
 
+    def reset_cueball(self, x, y):
+        self.cue_ball.velocity = (0, 0)
+        self.cue_ball.position = (x, y)
+
     def create_balls(self, ball_size):
+
         x = 100
         y = 100
         radius = ball_size / 2
+        self.cue_ball = self.create_ball(radius, x, y, self.colors["white"], self.collision_types["cue_ball"])
+        x = 340
+        self.black_ball = self.create_ball(radius, x, y, self.colors["black"], self.collision_types["black_ball"])
+        for i in range(7):
+            z1 = random.randint(20, 500)
+            z2 = random.randint(20, 300)
+            red = self.create_ball(radius, z1, z2, self.colors["red"], self.collision_types["red_ball"])
+            z1 = random.randint(20, 500)
+            z2 = random.randint(30, 300)
+            blue = self.create_ball(radius, z1, z2, self.colors["blue"], self.collision_types["blue_ball"])
 
-        self.cue_ball = self.create_ball(radius, x, y, self.colors["white"], self.collision_types["cue"])
-
-        for i in range(8):
-            z1 = random.randint(1, 5)
-            z2 = random.randint(1, 3)
-            self.create_ball(radius, 300 + z1 * 50, 105 + z2 * (ball_size + .1), self.colors["red"],
-                             self.collision_types["ball"])
-            self.create_ball(radius, 300 + z2 * 50, 105 + z2 * (ball_size + .1), self.colors["blue"],
-                             self.collision_types["ball"])
+            self.blue_balls.append(blue)
+            self.red_balls.append(red)
+            # self.create_ball(radius, 300 + z1 * 50, 105 + z2 * (ball_size + .1), self.colors["red"],
+            #                  self.collision_types["ball"])
+            # self.create_ball(radius, 300 + z2 * 50, 105 + z2 * (ball_size + .1), self.colors["blue"],
+            #                  self.collision_types["ball"])
 
 
         # black_ball = self.create_ball(radius, x, y)
 
     def create_ball(self, radius, x, y, color, collision_type):
-        mass = 100
+        mass = 10
         moment = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
         body = pymunk.Body(mass, moment)
         body.position = (x, y)
@@ -212,11 +277,15 @@ class World(pymunk.Space):
         self.add(body, shape)
         return body
 
-    def add_on_cuehit_handler(self, handler):
+    def add_on_cueball_collision_handler(self, handler):
         self.game_events.on_cuehit += handler
 
-    def add_on_gamestate_changed_handler(self, handler):
+    def add_on_simulation_finished_handler(self, handler):
         self.game_events.on_gamestate_changed += handler
+        # returns state
+            # red/blue/white/black ball position
+            # pocketed balls -> in order
+            # cue_ball hits -> in order
 
     def add_on_ball_pocketed_handler(self, handler):
         self.game_events.on_ball_pocketed += handler
@@ -243,14 +312,20 @@ class World(pymunk.Space):
             self.cue_ball.angle = angle
             self.cue_ball.apply_impulse_at_local_point((force, 0.0))
 
+    def update_full(self):
+        step_dt = 0.0015
+        while self.state:
+            self.step(step_dt)
+            self.check_state()
 
     def update(self, dt):
-        step_dt = 1 / (dt * 40000)
-        x = 0
-        while x < dt:
-            x += step_dt
-            self.step(step_dt)
-        # self.check_state()
+        if self.state:
+            step_dt = 1 / (dt * 40000)
+            x = 0
+            while x < dt:
+                x += step_dt
+                self.step(step_dt)
+            self.check_state()
 
     def check_state(self):
         is_sleeping = True
@@ -259,23 +334,27 @@ class World(pymunk.Space):
                 is_sleeping = False
                 break
         if is_sleeping:
+            # for shape in self.shapes:
+            #     print(shape.collision_type)
+            print(self.cue_ball.position)
             # print("Is sleeping...")
+            # create StateObject
             self.state = False
             return True
         return False
 
-    def update_until_finish(self):
-        step_dt = 0.0015
-        self.step(step_dt)
-
-        while self.check_state():
-            self.step(step_dt)
-        pass
-
-    def hit_and_update_until_finished(self, angle, force):
-        self.hit(angle, force)
-        self.update_until_finish()
-        pass
+    # def update_until_finish(self):
+    #     step_dt = 0.0015
+    #     self.step(step_dt)
+    #
+    #     while self.check_state():
+    #         self.step(step_dt)
+    #     pass
+    #
+    # def hit_and_update_until_finished(self, angle, force):
+    #     self.hit(angle, force)
+    #     self.update_until_finish()
+    #     pass
 
 
     # simulation
