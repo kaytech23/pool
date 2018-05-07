@@ -309,6 +309,7 @@ class World(pymunk.Space):
     # def add_on_cueball_collision_handler(self, handler):
     #     self.game_events.on_cuehit += handler
     #
+
     def add_on_simulation_finished_handler(self, handler):
         self.game_events.on_simulation_finished += handler
 
@@ -374,6 +375,10 @@ class World(pymunk.Space):
             BallType.BLUE_BALL: self.get_blue_balls_positions()
         }
         return balls
+
+    # get pocket positions
+    # get last_stroke pocketed_balls
+    # get last_stroke cue_balls_hits
 
     def get_cue_ball_position(self):
         return self.cue_ball.body.position

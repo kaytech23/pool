@@ -32,7 +32,7 @@ class Main(pyglet.window.Window):
         self.cue_angle = 0.0
         self.pointer_line = (0, 0, 0, 0)
 
-        self.real_time = True
+        self.real_time = False
 
         self.label = pyglet.text.Label('Current Player: 1',
                           font_name='Times New Roman',
@@ -116,14 +116,20 @@ class Main(pyglet.window.Window):
         for ball in pocketed_balls:
             print("Pocketd: " + str(ball))
 
-        if len(pocketed_balls) == 0:
-            self.change_current_player()
+        # if len(pocketed_balls) == 0:
+        #     self.change_current_player()
 
         angle, force = self.calculate_next_shot(balls)
 
-        print(angle)
-        print(force)
-        self.world.hit(angle, force)
+        for ball in pocketed_balls:
+            if ball == pool_world.BallType.CUE_BALL:
+                self.world.reset_cueball((100, 100))
+
+        # print(angle)
+        # print(force)
+        # self.on_draw()
+        # self.update(1)
+        # self.world.hit(angle, force)
 
         # idx = random.randint(0, len(self.ball_states) - 1)
         # print("setting world to state: " + str(idx) + " of " + str(len(self.ball_states)))
