@@ -1,0 +1,141 @@
+state
+
+- balls on table
+- players
+	- player
+		- pocketed balls
+- player turn - 1 or 2
+
+
+- ball positions
+- pocketed balls
+- color assigment
+- game state (end, in_progress)
+- winner
+- player_continue, player_switch
+
+
+
+
+rules(balls_pocketed - in_order, assigned_color,
+
+- faul
+- player continue
+- player switch
+- game over
+
+
+game state
+- in progress / end
+- winner
+- next player
+
+
+
+checkRules(balls, player, assigned_colors, pocketed_balls, cueball_hits)
+- faul
+-
+
+rules checker
+
+state
+.foul/playerswitch/playercontinue
+.balls_positions
+.pots_positions
+.pocketed_balls
+.color_assignment
+
+AI.round_result_notification(player, assigned_colors, pocketed_balls, current_state(faul/ongoing), balls_position)
+
+
+current player
+game state - ongoing, game over
+winner
+ball state
+color assignment
+
+----------------------------
+observation
+.balls_position
+.balls_pocketed
+.cueballs_hits
+
+
+----------------------------
+game_state
+.state -> p1won, p2won, faul
+
+
+
+
+
+
+
+simulation_state
+.balls_position
+.pockets_position
+.all_pocketed_balls
+.last_pocketed_balls
+.last_cueball_hits
+
+game_state -> (simulation_state)
+.previous_player
+.current_player
+.state (won, foul, inprogress, start)
+.player
+	.id
+	.name
+	.color
+	.pocketed
+
+player_advisor.init(player, simulation_state)
+.simulation_update(game_state, simulation_state)
+
+
+
+game_controller
+
+----> While True
+game_state
+.update(simulation_state)
+
+player_advisor1
+.update(game_state, simulation_state)
+player_advisor2
+.update(game_state, simulation_state)
+
+switch(game_state.state)
+- inprogress/start
+	(angle, force) = getplayermove()
+	pool_simulator.stroke()
+
+- foul
+	getplayercueballset()
+	getplayermove()
+	pool_simulator.stroke()
+
+
+
+--------> update()
+#if real_time
+	----> While True
+	pool_simulator.update(dt, 0.0015f)
+	draw()
+#if full
+	draw.please_wait()
+	pool_simulator.update_full(0.0015f)
+
+draw()
+
+
+-------> key/mouse
+switch(state->player1, player2, gameover)
+	mouse click
+
+
+
+mainloop()
+
+
+
+
