@@ -91,9 +91,173 @@ game_state -> (simulation_state)
 player_advisor.init(player, simulation_state)
 .simulation_update(game_state, simulation_state)
 
+game_state
+- start
+- play
+- foul
+- game_over
 
 
 game_controller
+
+* init
+
+simulator
+game_rules
+game_controller(game_rules, simulator)
+player1
+player2
+
+simulator_state = simulator.init()
+game_state = game_controller.init(simulator_state)
+player1_id = game_controller.get_player1_id()
+player2_id = game_controller.get_player2_id()
+
+player1.update(simulator_state, game_state)
+player2.update(simulator_state, game_state)
+
+
+* while(game_state != game_over)
+
+    player_id = game_controller.get_current_player_id()
+    player = players[player_id]
+
+    *** if foul let the player to reset a ball
+    * while(game_state == foul):
+        x, y = player.get_cue_ball_new_position()
+        game_state = game_controller.check_cue_ball_position()
+    simulator.reset_cue_ball(x, y)
+    players.update(simulator_state, game_state)
+
+    *** get player stroke
+    angle, force = player.get_stroke_data()
+
+    *** simulate hit the cue ball hit
+    simulation_state = simulator.set_stroke(angle, force)
+    * while(simulation_state == in_progress) {
+        * if (real_time)
+            simulation_state = simulator.update(dt)
+            // thread.sleep(1/60 sec)
+        * else
+            simulation_state = simulator.full_update()
+        update_view(simulator, players, game_state)
+
+    *** update experts
+
+    simulator_state = simulator.get_state()
+    game_state = game_controller.get_state(simulator_state)
+    players.update(simulator_state, game_state)
+
+
+player_id = game_controller.get_current_player_id()
+player = players[player_id]
+
+player has won
+update
+
+
+
+
+* init
+
+simulator_state
+players_state
+game_state
+
+
+
+
+- table_state (balls positions
+- players_state (balls pocketed, color assigned)
+- game_state (start, won, in_progress, foul)
+
+
+
+simulator_observation
+
+game_observation
+    - state:
+
+game_state:
+- state (game over, foul,
+- balls on table (positions) -> from simulator
+- player1 (pocketed balls, color)
+- player2 (pocketed balls, color)
+
+
+
+* Events --- simulator
+simulation finished()
+    - check game rules
+        -> state
+        -> current player
+    - update players(player_played, table_state, players_state, )
+    - new thread
+pocketed_ball()
+    - color assignment
+    - add pocketed balls to list
+    - check if foul (white)
+    - check if win (black)
+cue_ball_hit()
+    - wrong color foul
+
+
+* Events --- player
+reset_cue_ball_and_stroke(player, x, y, angle, force)
+simulator.reset_cue(x, y)
+simulator.hit(angle, force)
+change_state-> simulation_inprogess
+
+stroke(player, angle, force)
+
+
+current_player.update(dt)
+current_player.key_stroke(key)
+current_player.mouse_event(mouse_event)
+
+
+update_player(dt)
+
+    update_
+    await (x, y) = current_player.reset_cue_ball()
+    await (angle, force) = current_player.get_stroke()
+
+
+
+* update(dt)
+    update state
+    - if pause
+    - if simulation
+        simulator.update(dt)
+    - if player
+        draw player ??
+    draw simulation
+    draw game state
+
+
+game_state.update(
+
+
+
+player_id = game_controller.get_current_player_id()
+player = players[player_id]
+
+player has won
+update
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ----> While True
 game_state
