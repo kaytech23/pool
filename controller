@@ -1,16 +1,27 @@
-process_next_move()
-    - state player
-        - get current player
-        - if foul
-            x, y = player.reset_cue()
-        - angle, force = player.get_stroke()
-    - state simulation
+const automatic_start = true
+game_state
+is_foul = true
 
-def reset_cue_ball(player, x, y):
-    players.cue_ball_update(player, x, y)
+current_player
+opponent
+prev_current_player
+prev_opponent
+
+
+process_next_move(player)
+    - if foul
+        reset_cue_ball()
+    - stroke()
+    - change_state(simulation)
+
+def reset_cue_ball(player, opponent):
+    x, y = player.get_foul_cue_position()
     simulator.reset_cue_ball(x, y)
+    player.cue_ball_update(x, y)
+    opponent.opponent_cue_ball_update(x, y)
 
-def stroke(player, angle, force):
+def stroke(player, opponent):
+    angle, force = player.get_stroke()
     simulator.set_stroke(angle, force)
     change_state(stroke_simulation)
 
@@ -19,12 +30,8 @@ def change_state(state)
 
 * Events --- simulator
 simulation finished()
-    - check game state
-        -> state(win/foul/continue/change)
-        -> current player
-    - update players(player_played, balls_state, balls_pocketed, state)
-    - change_state(player_move)
-    - thread process next_move
+    change_state(simulation_finished)
+
 
 pocketed_ball()
     - color assignment - update players and controller
@@ -46,30 +53,44 @@ controller
 simulator
 players
 
-
-player = getcurrentplayer()
 change_state(player_move)
-thread new process_next_move()
-
 
 * update(dt)
-    - if pause
+    - if start
+        * if automatic_start
+            restart game
+        * if manual_start
+            if key pressed
+                restart game
+    - if game_over
+        * if automatic_start
+            restart game
+        * if manual_start
+            if key pressed
+                restart game
     - if simulation
         * real_time
-            simulator.update(dt)
+            (state, pocketed_balls, cue_ball_hits) = simulator.update(dt)
         * full
-    - if player
+    - if simulation_finished
+        - win/foul/continue/change = check rules --> change players ect, game_state, returns simulation_state
+        - update player(balls_state, balls_pocketed, state)
+        - update opponent(balls_state, balls_pocketed, state)
+    - if player_begin
+        player = get_current_player()
+        thread new process_next_move(player)
+        change_state(player_ongoing)
+        draw player
+    - if player_ongoing
         draw player ??
+
     draw simulation
     draw game state
 
 
-game_state.update(
 
-
-
-player_id = game_controller.get_current_player_id()
-player = players[player_id]
-
-player has won
-update
+start_game()
+    * simulator.new_game()
+    * players.new_game(state)
+    * reset_state()
+    * change_state(player_begin)
