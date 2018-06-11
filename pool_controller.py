@@ -4,6 +4,7 @@ import pool_world
 import random
 import math
 import player
+import pool_game_rules
 
 from pyglet.window import key, mouse
 from enum import Enum
@@ -43,26 +44,24 @@ class Player(Enum):
 class PlayerState(Enum):
     pass
 
-class Main(pyglet.window.Window):
 
+class Main(pyglet.window.Window):
 
     def __init__(self):
         super(Main, self).__init__(1300, 900, vsync=False)
 
-        self._game_state = GameState.START
-        self._game_start = GameStart.AUTOMATIC
-        self._simulation_type = SimulationType.REAL_TIME
         self._players = {
             Player.ONE: player.Player(),
             Player.TWO: player.Player()
         }
+        self._game_rules = pool_game_rules.GameRules(self._players[Player.ONE], self._players[Player.TWO])
+
+        self._game_state = GameState.GAME_INIT
+        self._game_start = GameStart.AUTOMATIC
+        self._simulation_type = SimulationType.REAL_TIME
         self._current_player = Player.ONE
 
-
-
-
         pyglet.gl.glClearColor(0, 0.5, 0, 1)
-
 
         self.current_player = 1
 
@@ -87,10 +86,7 @@ class Main(pyglet.window.Window):
 
 
 
-    # def calculate_point_on_circle(self, cx, cy, r, angle):
-    #     x = cx + r * math.cos(angle)
-    #     y = cy + r * math.sin(angle)
-    #     return x, y
+
 
 
 
@@ -106,6 +102,9 @@ class Main(pyglet.window.Window):
         self.label.text = 'Current Player: ' + str(self.current_player)
 
     def update(self, dt):
+
+        # state game_init, game_over, player_move, simulation
+
 
         if self._game_state == GameState.GAME_INIT:
             # set start player
@@ -135,10 +134,16 @@ class Main(pyglet.window.Window):
             # player continue
             pass
 
-
-
     def _start_game(self):
         pass
+
+    def _start_simulation(self):
+        for player in self._players:
+            player.simulation_start()
+
+        # notify players
+        self._game_state = GameState.SIMULATION_START
+
 
     def _process_player_move(self, player):
         # check faul
@@ -146,11 +151,17 @@ class Main(pyglet.window.Window):
         # set angle stroke
         # game_state = Simulation_INPROGRESS
         pass
-    # def calculate_line(self):
-    #     cue_position = self.world.get_cue_ball_position()
-    #     x, y = self.calculate_point_on_circle(cue_position[0], cue_position[1], 1040, self.cue_angle)
-    #     self.pointer_line = (int(cue_position[0]), int(cue_position[1]), int(x), int(y))
-    #
+
+    def calculate_point_on_circle(self, cx, cy, r, angle):
+        x = cx + r * math.cos(angle)
+        y = cy + r * math.sin(angle)
+        return x, y
+
+    def calculate_line(self):
+        cue_position = self.world.get_cue_ball_position()
+        x, y = self.calculate_point_on_circle(cue_position[0], cue_position[1], 1040, self.cue_angle)
+        self.pointer_line = (int(cue_position[0]), int(cue_position[1]), int(x), int(y))
+
     # def draw_pointer(self):
     #     pyglet.graphics.draw(2, pyglet.gl.GL_LINES, ('v2i', self.pointer_line))
     #     # pyglet.graphics.draw(2, pyglet.gl.GL_LINES, ('v2i', (0, 0, 10, 10)))
@@ -163,34 +174,58 @@ class Main(pyglet.window.Window):
         # self.draw_pointer()
 
     def on_key_press(self, symbol, modifiers):
-        if symbol == key.SPACE:
-            f = 25000.0
-            self.world.hit(self.cue_angle, f)
-        elif symbol == key.DOWN:
-            self.cue_angle += 0.03
-            self.calculate_line()
-        elif symbol == key.UP:
-            self.cue_angle -= 0.1
-            self.calculate_line()
-        elif symbol == key.ESCAPE:
+
+        if symbol == key.ESCAPE:
             pyglet.app.exit()
         elif symbol == pyglet.window.key.P:
             pyglet.image.get_buffer_manager().get_color_buffer().save('box2d_vertical_stack.png')
 
+        player = self._get_current_player()
+        player.on_key_press(symbol, modifiers)
+
+        #
+        # if symbol == key.SPACE:
+        #     f = 25000.0
+        #     self.world.hit(self.cue_angle, f)
+        # elif symbol == key.DOWN:
+        #     self.cue_angle += 0.03
+        #     self.calculate_line()
+        # elif symbol == key.UP:
+        #     self.cue_angle -= 0.1
+        #     self.calculate_line()
+
     def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
-        pass
+        player = self._get_current_player()
+        player.on_mouse_drag(x, y, dx, dy, buttons, modifiers)
 
     def on_mouse_press(self, x, y, button, modifiers):
-        print(x)
-        print(y)
-        # self.real_time = not self.real_time
-        self.world.reset_cueball( (x, y))
+        player = self._get_current_player()
+        player.on_mouse_drag(x, y, button, modifiers)
+
+        # print(x)
+        # print(y)
+        # # self.real_time = not self.real_time
+        # self.world.reset_cueball((x, y))
         # self.calculate_line()
         pass
 
     # ball_states = []
 
     def on_simulation_finished(self, balls, pocketed_balls, cueball_hits):
+
+        game_state, current_player, foul, color_assignment = self._game_rules.check_game_state(balls, pocketed_balls, cueball_hits)
+        self._players[Player.ONE].simulation_finish()
+        self._players[Player.TWO].simulation_finish()
+
+        if foul:
+            process_foul()
+
+
+
+        if foul:
+
+            pass
+
         # self.ball_states.append(balls)
         print("Red + Bules: " + str(len(balls[pool_world.BallType.BLUE_BALL]) + len(balls[pool_world.BallType.RED_BALL])))
         self.calculate_line()
