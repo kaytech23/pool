@@ -70,7 +70,7 @@ class World(pymunk.Space):
     def __init__(self):
         super(World, self).__init__()
         self.game_events = Events()
-        self.damping = 0.25
+        self.damping = 0.3
         # self.gravity = (-1000, 0)
         self.state = False
 
