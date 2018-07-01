@@ -1,0 +1,96 @@
+const automatic_start = true
+game_state
+is_foul = true
+
+current_player
+opponent
+prev_current_player
+prev_opponent
+
+
+process_next_move(player)
+    - if foul
+        reset_cue_ball()
+    - stroke()
+    - change_state(simulation)
+
+def reset_cue_ball(player, opponent):
+    x, y = player.get_foul_cue_position()
+    simulator.reset_cue_ball(x, y)
+    player.cue_ball_update(x, y)
+    opponent.opponent_cue_ball_update(x, y)
+
+def stroke(player, opponent):
+    angle, force = player.get_stroke()
+    simulator.set_stroke(angle, force)
+    change_state(stroke_simulation)
+
+def change_state(state)
+
+
+* Events --- simulator
+simulation finished()
+    change_state(simulation_finished)
+
+
+pocketed_ball()
+    - color assignment - update players and controller
+    - add pocketed balls to list
+    - check if foul (white)
+    - check if win (black)
+cue_ball_hit()
+    - wrong color foul
+
+
+current_player.update(dt)
+current_player.key_stroke(key)
+current_player.mouse_event(mouse_event)
+
+change_state(start)
+
+SETUP
+controller
+simulator
+players
+
+change_state(player_move)
+
+* update(dt)
+    - if start
+        * if automatic_start
+            restart game
+        * if manual_start
+            if key pressed
+                restart game
+    - if game_over
+        * if automatic_start
+            restart game
+        * if manual_start
+            if key pressed
+                restart game
+    - if simulation
+        * real_time
+            (state, pocketed_balls, cue_ball_hits) = simulator.update(dt)
+        * full
+    - if simulation_finished
+        - win/foul/continue/change = check rules --> change players ect, game_state, returns simulation_state
+        - update player(balls_state, balls_pocketed, state)
+        - update opponent(balls_state, balls_pocketed, state)
+    - if player_begin
+        player = get_current_player()
+        thread new process_next_move(player)
+        change_state(player_ongoing)
+        draw player
+    - if player_ongoing
+        draw player ??
+
+    draw simulation
+    draw game state
+
+
+
+start_game()
+    * simulator.new_game()
+    * players.new_game(state)
+    * reset_state()
+    * change_state(player_begin)

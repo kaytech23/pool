@@ -1,0 +1,24 @@
+-- game_controller
+
+// blocking
+def reset_cue_ball_position()
+    return (x, y)
+def get_stroke()
+    return (true/false, angle, force)
+
+
+
+// update
+def new_game(balls_state)
+def simulation_update(balls_state, balls_pocketed, foul/win/continue/change)
+def cue_ball_position_update(x, y)
+def opponent_simulation_update(balls_state, balls_pocketed, foul/win/continue/change)
+def opponent_cue_ball_position_update(x, y)
+def color_assignment_update(color_assignment)
+
+
+def keystroke_hit(key)
+def mouse_event(mouse_event)
+def update(df)
+
+
