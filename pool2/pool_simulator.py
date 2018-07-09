@@ -1,13 +1,9 @@
 import pymunk
 import random
-
 # https://github.com/viblo/pymunk/blob/master/examples/shapes_for_draw_demos.py
 
 
-from enum import Enum
-
-
-def local_color_setter(ball_id):
+def my_color_setter(ball_id):
     if 0 == ball_id:
         return colors["white"]
     elif 8 == ball_id:
@@ -33,7 +29,7 @@ class PoolSimulator(pymunk.Space):
         "pocket": 3
     }
 
-    def __init__(self, balls=None, table_length=1200, ball_diameter=24, damping=0.25):
+    def __init__(self, table_length=1200, ball_diameter=24, damping=0.25):
         super(PoolSimulator, self).__init__()
 
         self.is_finished = True
@@ -47,7 +43,7 @@ class PoolSimulator(pymunk.Space):
         self.table_length = table_length
         self.ball_diameter = ball_diameter
         self.sleep_time_threshold = 0.3
-        self.idle_speed_threshold = 0.1
+        self.idle_speed_threshold = 0.2
 
         # create world
         self.__create_table(self.table_length, self.ball_diameter)
@@ -183,7 +179,16 @@ class PoolSimulator(pymunk.Space):
         # table corners coordinates
         pass
 
-    def set_balls(self, cueball_id, balls, color_setter=local_color_setter):
+    def set_stroke(self, angle, force):
+        if self.is_finished:
+            self.is_finished = False
+            _, shape = self.cue_ball
+            shape.body.angle = angle
+            shape.body.apply_impulse_at_local_point((force, 0.0))
+            self.balls_pocketed.clear()
+            self.balls_hits.clear()
+
+    def set_balls(self, cueball_id, balls, color_setter=my_color_setter):
         self.__remove_all_balls()
         has_cueball = False
         for ball_id, x, y in balls:
@@ -204,10 +209,20 @@ class PoolSimulator(pymunk.Space):
             self.balls_pocketed.clear()
             self.balls_hits.clear()
             cueball_id, shape = self.cue_ball
-            self.__remove_ball(shape)
-            shape = self.__add_ball_to_space(x, y, colors["white"], self.collision_types["cueball"])
-            self.balls_on_table[shape] = cueball_id
-            self.cue_ball = (cueball_id, shape)
+            shape.body.position = (x, y)
+            shape.body.velocity = (0.0, 0.0)
+            if shape not in self.balls_on_table:
+                self.add(shape.body, shape)
+                self.balls_on_table[shape] = cueball_id
+
+    def get_table_dimensions(self):
+        return self.table_length, self.table_length / 2
+
+    def get_ball_size(self):
+        return self.ball_diameter
+
+    def get_pockets_position(self):
+        return self.pockets
 
     def get_cueball_position(self):
         id, shape = self.cue_ball
@@ -228,20 +243,34 @@ class PoolSimulator(pymunk.Space):
         return self.balls_hits
 
     def get_simulation_results(self):
-        return self.get_balls_position(), self.pocketed_balls, self.balls_hits
+        return self.get_balls_position(), self.balls_pocketed, self.balls_hits
 
-    def simulate_full_stroke(self, angle, force):
-        if self.is_finished:
-            self.__init_stroke(angle, force)
-            while not self.is_finished:
-                self.__update(1)
-                self.__check_simulation()
+    # def simulate_full_stroke(self, angle, force):
+    #     if self.is_finished:
+    #         self.__init_stroke(angle, force)
+    #         while not self.is_finished:
+    #             self.__update(1)
+    #             self.__check_simulation()
+    #
+    # def simulate_interactive_stroke(self, angle, force):
+    #     if self.is_finished:
+    #         self.__init_stroke(angle, force)
+    #
+    # def interactive_update(self, dt):
+    #     self.__update(dt)
+    #     if self.is_finished:
+    #         return True
+    #     else:
+    #         self.__check_simulation()
+    #     return self.is_finished
 
-    def simulate_interactive_stroke(self, angle, force):
-        if self.is_finished:
-            self.__init_stroke(angle, force)
+    def full_update(self):
+        while not self.is_finished:
+            self.__update(1)
+            self.__check_simulation()
+        return self.is_finished
 
-    def interactive_update(self, dt):
+    def step_update(self, dt):
         self.__update(dt)
         if self.is_finished:
             return True

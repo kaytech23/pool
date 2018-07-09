@@ -57,7 +57,7 @@ class Main(pyglet.window.Window):
 
     def update(self, dt):
 
-        self.world.interactive_update(dt)
+        self.world.step_update(dt)
         # if self.real_time and self.world.interactive_update(dt):
         #     balls = self.world.get_pocketed_balls()
         #     print(balls)
@@ -81,7 +81,7 @@ class Main(pyglet.window.Window):
     def on_key_press(self, symbol, modifiers):
         if symbol == key.SPACE:
             f = 25000.0
-            self.world.simulate_interactive_stroke(self.cue_angle, f)
+            self.world.set_stroke(self.cue_angle, f)
         elif symbol == key.DOWN:
             self.cue_angle += 0.03
             self.calculate_line()
