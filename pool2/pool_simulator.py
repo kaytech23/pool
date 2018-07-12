@@ -1,5 +1,6 @@
 import pymunk
 import random
+import numpy as np
 # https://github.com/viblo/pymunk/blob/master/examples/shapes_for_draw_demos.py
 
 
@@ -29,21 +30,23 @@ class PoolSimulator(pymunk.Space):
         "pocket": 3
     }
 
-    def __init__(self, table_length=1200, ball_diameter=24, damping=0.25):
+    def __init__(self, table_length=1200, ball_diameter=24, damping=0.35):
         super(PoolSimulator, self).__init__()
 
         self.is_finished = True
+        self.sleep_time_threshold = 0.3
+        self.idle_speed_threshold = 0.2
+
         self.cue_ball = None
         self.balls_on_table = {}
         self.balls_pocketed = []
         self.balls_hits = []
-        self.pockets = []
+        self.pockets_coordinates = {}
 
         self.damping = damping
         self.table_length = table_length
         self.ball_diameter = ball_diameter
-        self.sleep_time_threshold = 0.3
-        self.idle_speed_threshold = 0.2
+
 
         # create world
         self.__create_table(self.table_length, self.ball_diameter)
@@ -141,7 +144,7 @@ class PoolSimulator(pymunk.Space):
         ]
 
         for line in lines:
-            line.elasticity = 1.0
+            line.elasticity = 0.98
             line.friction = 0.0
             # self.add(body, line)
         self.add(lines)
@@ -157,6 +160,7 @@ class PoolSimulator(pymunk.Space):
         table_half_length = table_length / 2
         pockets_coordinates["Top_Mid"] = (table_half_length, table_width)
         pockets_coordinates["Down_Mid"] = (table_half_length, 0)
+
         pockets = [
                 pymunk.Circle(self.static_body, pocket_sensor_diameter, pockets_coordinates["Top_Left"]),
                 pymunk.Circle(self.static_body, pocket_sensor_diameter, pockets_coordinates["Top_Right"]),
@@ -171,12 +175,12 @@ class PoolSimulator(pymunk.Space):
             pocket.friction = 0.0
             pocket.sensor = True
             pocket.collision_type = self.collision_types["pocket"]
-            self.pockets.append(pocket.body.position)
         self.add(pockets)
-
+        self.pockets_coordinates = pockets_coordinates
         # calc corner gap shift
         # pockets coordinates
         # table corners coordinates
+
         pass
 
     def set_stroke(self, angle, force):
@@ -188,7 +192,7 @@ class PoolSimulator(pymunk.Space):
             self.balls_pocketed.clear()
             self.balls_hits.clear()
 
-    def set_balls(self, cueball_id, balls, color_setter=my_color_setter):
+    def set_balls(self, balls, cueball_id=0, color_setter=my_color_setter):
         self.__remove_all_balls()
         has_cueball = False
         for ball_id, x, y in balls:
@@ -222,7 +226,7 @@ class PoolSimulator(pymunk.Space):
         return self.ball_diameter
 
     def get_pockets_position(self):
-        return self.pockets
+        return self.pockets_coordinates.values()
 
     def get_cueball_position(self):
         id, shape = self.cue_ball
@@ -266,7 +270,7 @@ class PoolSimulator(pymunk.Space):
 
     def full_update(self):
         while not self.is_finished:
-            self.__update(1)
+            self.__update(3)
             self.__check_simulation()
         return self.is_finished
 
@@ -306,14 +310,14 @@ class PoolSimulator(pymunk.Space):
             shape.body.velocity(0.0, 0.0)
 
     def __add_ball_to_space(self, x, y, color, collision_type):
-        mass = 10
+        mass = 5
         radius = self.ball_diameter / 2
         moment = pymunk.moment_for_circle(mass, 0, radius, (0, 0))
         body = pymunk.Body(mass, moment)
         body.position = (x, y)
         shape = pymunk.Circle(body, radius, (0, 0))
         shape.friction = 0.0
-        shape.elasticity = 1.0
+        shape.elasticity = 0.99
         shape.color = color
         shape.collision_type = collision_type
         self.add(body, shape)
@@ -345,3 +349,44 @@ class PoolSimulator(pymunk.Space):
             random_balls.append((i, z1, z2))
 
         return random_balls
+
+    def pool_rack_em_up(self, ball_size, white_line_x, blackball_spot_x, table_width, racking_error=0.1):
+
+        ball_size = ball_size + racking_error
+
+        ball_location_x = np.array([white_line_x, blackball_spot_x - 2 * ball_size,
+                                    blackball_spot_x + 2 * ball_size,
+                                    blackball_spot_x - 1 * ball_size,
+                                    blackball_spot_x + 1 * ball_size,
+                                    blackball_spot_x + 2 * ball_size,
+                                    blackball_spot_x,
+                                    blackball_spot_x + 2 * ball_size,
+                                    blackball_spot_x,
+                                    blackball_spot_x + 1 * ball_size,
+                                    blackball_spot_x + 2 * ball_size,
+                                    blackball_spot_x - 1 * ball_size,
+                                    blackball_spot_x + 2 * ball_size,
+                                    blackball_spot_x + 1 * ball_size,
+                                    blackball_spot_x,
+                                    blackball_spot_x + 1 * ball_size])
+
+        ball_location_y = np.array([table_width / 2,
+                                    table_width / 2,
+                                    table_width / 2 + 1 * ball_size,
+                                    table_width / 2 - 0.5 * ball_size,
+                                    table_width / 2 - 0.5 * ball_size,
+                                    table_width / 2 - 1 * ball_size,
+                                    table_width / 2 + 1 * ball_size,
+                                    table_width / 2 + 2 * ball_size,
+                                    table_width / 2,
+                                    table_width / 2 - 1.5 * ball_size,
+                                    table_width / 2,
+                                    table_width / 2 + 0.5 * ball_size,
+                                    table_width / 2 - 2 * ball_size,
+                                    table_width / 2 + 1.5 * ball_size,
+                                    table_width / 2 - 1 * ball_size,
+                                    table_width / 2 + 0.5 * ball_size])
+
+        ball_size = ball_size - racking_error
+
+        return ball_location_x, ball_location_y
