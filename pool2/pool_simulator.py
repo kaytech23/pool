@@ -268,6 +268,12 @@ class PoolSimulator(pymunk.Space):
     #         self.__check_simulation()
     #     return self.is_finished
 
+    def update(self, dt, step=True):
+        if step:
+            self.step_update(dt)
+        else:
+            self.full_update()
+
     def full_update(self):
         while not self.is_finished:
             self.__update(3)
@@ -350,43 +356,52 @@ class PoolSimulator(pymunk.Space):
 
         return random_balls
 
-    def pool_rack_em_up(self, ball_size, white_line_x, blackball_spot_x, table_width, racking_error=0.1):
+    def pool_rack_em_up(self):
 
-        ball_size = ball_size + racking_error
+        racking_error = 0.0
+        ball_size = self.ball_diameter + racking_error
+        white_line_x = self.table_length / 4
+        blackball_spot_x = self.table_length - white_line_x
+        table_width = self.table_length / 2 + 30
 
-        ball_location_x = np.array([white_line_x, blackball_spot_x - 2 * ball_size,
-                                    blackball_spot_x + 2 * ball_size,
-                                    blackball_spot_x - 1 * ball_size,
-                                    blackball_spot_x + 1 * ball_size,
-                                    blackball_spot_x + 2 * ball_size,
-                                    blackball_spot_x,
-                                    blackball_spot_x + 2 * ball_size,
-                                    blackball_spot_x,
-                                    blackball_spot_x + 1 * ball_size,
-                                    blackball_spot_x + 2 * ball_size,
-                                    blackball_spot_x - 1 * ball_size,
-                                    blackball_spot_x + 2 * ball_size,
-                                    blackball_spot_x + 1 * ball_size,
-                                    blackball_spot_x,
-                                    blackball_spot_x + 1 * ball_size])
+        ball_location_x = [white_line_x,
+                           blackball_spot_x - 2 * ball_size,
+                           blackball_spot_x + 2 * ball_size,
+                           blackball_spot_x - 1 * ball_size,
+                           blackball_spot_x + 1 * ball_size,
+                           blackball_spot_x + 2 * ball_size,
+                           blackball_spot_x,
+                           blackball_spot_x + 2 * ball_size,
+                           blackball_spot_x,
+                           blackball_spot_x + 1 * ball_size,
+                           blackball_spot_x + 2 * ball_size,
+                           blackball_spot_x - 1 * ball_size,
+                           blackball_spot_x + 2 * ball_size,
+                           blackball_spot_x + 1 * ball_size,
+                           blackball_spot_x,
+                           blackball_spot_x + 1 * ball_size]
 
-        ball_location_y = np.array([table_width / 2,
-                                    table_width / 2,
-                                    table_width / 2 + 1 * ball_size,
-                                    table_width / 2 - 0.5 * ball_size,
-                                    table_width / 2 - 0.5 * ball_size,
-                                    table_width / 2 - 1 * ball_size,
-                                    table_width / 2 + 1 * ball_size,
-                                    table_width / 2 + 2 * ball_size,
-                                    table_width / 2,
-                                    table_width / 2 - 1.5 * ball_size,
-                                    table_width / 2,
-                                    table_width / 2 + 0.5 * ball_size,
-                                    table_width / 2 - 2 * ball_size,
-                                    table_width / 2 + 1.5 * ball_size,
-                                    table_width / 2 - 1 * ball_size,
-                                    table_width / 2 + 0.5 * ball_size])
+        ball_location_y = [table_width / 2,
+                           table_width / 2,
+                           table_width / 2 + 1 * ball_size,
+                           table_width / 2 - 0.5 * ball_size,
+                           table_width / 2 - 0.5 * ball_size,
+                           table_width / 2 - 1 * ball_size,
+                           table_width / 2 + 1 * ball_size,
+                           table_width / 2 + 2 * ball_size,
+                           table_width / 2,
+                           table_width / 2 - 1.5 * ball_size,
+                           table_width / 2,
+                           table_width / 2 + 0.5 * ball_size,
+                           table_width / 2 - 2 * ball_size,
+                           table_width / 2 + 1.5 * ball_size,
+                           table_width / 2 - 1 * ball_size,
+                           table_width / 2 + 0.5 * ball_size]
 
-        ball_size = ball_size - racking_error
+        balls = []
+        for index in range(len(ball_location_x)):
+            balls.append((index, ball_location_x[index], ball_location_y[index]))
 
-        return ball_location_x, ball_location_y
+        return balls
+
+

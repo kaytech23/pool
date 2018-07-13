@@ -64,7 +64,8 @@ class PoolGameModel(object):
     def init_game(self):
         self.frame_counter = 0
         self.balls_pocketed.clear()
-        self.balls_on_table = self.pool_simulator.generate_random_balls()
+        # self.balls_on_table = self.pool_simulator.generate_random_balls()
+        self.balls_on_table = self.pool_simulator.pool_rack_em_up()
         self.pool_simulator.set_balls(self.balls_on_table)
 
     def update(self, dt):
@@ -153,3 +154,114 @@ class PoolGameModel(object):
             print(self.foul)
 
 
+    def check_simulation_state(self, balls_on_table, recently_pocketed_balls, cueball_hits):
+
+        self.balls_on_table = balls_on_table
+
+        is_ready_for_the_black = is_ready_for_the_black()
+        color_assingment = get_player_color_assigment()
+
+        # check first ball contact
+            # none
+            # black
+            # correct/incorect color
+        # check potted balls
+            # cue faule
+            # black end of the game
+                # if ready for black
+                # not ready
+            # check assigment and rest colors
+
+
+
+    # def check_rules(self, ReadyForTheBlack, ColorAssignment, FirstBallBallContact,
+    #                Player, PotCount, BallPotSeq, UnpottedBalls,
+    #                BallLocationX, BallLocationY, BallDiameter, WhiteLineX, TableWidth):
+        PoolMsg = '';
+        Foul = 0;
+        EndofGame = 0;
+
+        if ReadyForTheBlack[Player - 1] == 0:
+            CannotStrikeBlack = 1;
+        else:
+            CannotStrikeBlack = 0;
+
+        if FirstBallBallContact == 0:
+            PoolMsg = 'FOUL! Player {0} Failed to Hit a Ball'.format(Player)
+            Foul = 1;
+        else:
+            if ColorAssignment[Player - 1] == 1:
+                if FirstBallBallContact > 8 - CannotStrikeBlack:
+                    PoolMsg = 'FOUL! Player {0} First Hit Ball of Wrong Color'.format(Player)
+                    Foul = 1;
+            elif ColorAssignment[Player - 1] == 2:
+                if FirstBallBallContact < 8 + CannotStrikeBlack:
+                    PoolMsg = 'FOUL! Player {0} First Hit Ball of Wrong Color'.format(Player)
+                    Foul = 1;
+
+        if PotCount > 0:
+            for J in range(0, PotCount):
+                if BallPotSeq[J] == 0:
+                    PoolMsg = 'FOUL! Player {0} Potted the Cue Ball'.format(Player)
+                    BallLocationX[0] = WhiteLineX;
+                    BallLocationY[0] = TableWidth / 2;
+                    UnpottedBalls.append(0)
+                    UnpottedBalls.sort()
+                    Foul = 1;
+                    for K in range(J + 1, PotCount):
+                        BallLocationX[BallPotSeq[K]] = BallLocationX[BallPotSeq[K]] - (BallDiameter + 0.01);
+                elif BallPotSeq[J] == 8:
+                    EndofGame = 1;
+                    if ReadyForTheBlack[Player - 1] == 0:
+                        PoolMsg = 'FOUL! Player {0} Potted the Black Ball'.format(Player)
+                        Foul = 1;
+                else:
+                    PoolMsg = 'Player {0} Potted the {1}, ball'.format(Player, BallPotSeq[J])
+                    if max(ColorAssignment) == 0:
+                        if Player == 1:
+                            if BallPotSeq[J] < 8:
+                                ColorAssignment = [1, 2]
+                                PoolMsg = 'Player 1 is Yellow, Player 2 is Blue'
+                            elif BallPotSeq[J] > 8:
+                                ColorAssignment = [2, 1]
+                                PoolMsg = 'Player 1 is Blue, Player 2 is Yellow'
+                        else:
+                            if BallPotSeq[J] < 8:
+                                ColorAssignment = [2, 1]
+                                PoolMsg = 'Player 1 is Blue, Player 2 is Yellow'
+                            elif BallPotSeq[J] > 8:
+                                ColorAssignment = [1, 2]
+                                PoolMsg = 'Player 1 is Yellow, Player 2 is Blue'
+                    else:
+                        if ColorAssignment[Player - 1] == 1:
+                            if BallPotSeq[J] > 8:
+                                Foul = 1;
+                                PoolMsg = 'FOUL! Player {0} Potted Opponents Ball'.format(Player)
+                        elif ColorAssignment[Player - 1] == 2:
+                            if BallPotSeq[J] < 8:
+                                Foul = 1
+                                PoolMsg = 'FOUL! Player {0} Potted Opponents Ball'.format(Player)
+
+            if ColorAssignment[0] == 1:
+                Player1NoBallsRemaining = sum(1 for i in UnpottedBalls if (i > 0) & (i < 8))
+                Player2NoBallsRemaining = sum(1 for i in UnpottedBalls if (i > 8))
+            #            Player1NoBallsRemaining = [i for i, j in enumerate(UnpottedBalls) if ((j < 8) & (j > 0))]
+            #            Player2NoBallsRemaining = [i for i, j in enumerate(UnpottedBalls) if j > 9]
+            elif ColorAssignment[0] == 2:
+                #            Player1NoBallsRemaining = [i for i, j in enumerate(UnpottedBalls) if j > 9]
+                #            Player2NoBallsRemaining = [i for i, j in enumerate(UnpottedBalls) if ((j < 8) & (j > 0))]
+
+                Player1NoBallsRemaining = sum(1 for i in UnpottedBalls if (i > 8))
+                Player2NoBallsRemaining = sum(1 for i in UnpottedBalls if (i > 0) & (i < 8))
+            else:
+                Player1NoBallsRemaining = 7;
+                Player2NoBallsRemaining = 7;
+
+            if Player1NoBallsRemaining == 0:
+                if ReadyForTheBlack[0] == 0:
+                    ReadyForTheBlack[0] = 1;
+                    PoolMsg = 'Player 1 is going for the black'
+            if Player2NoBallsRemaining == 0:
+                if ReadyForTheBlack[1] == 0:
+                    ReadyForTheBlack[1] = 1;
+                    PoolMsg = 'Player 2 is going for the black'
