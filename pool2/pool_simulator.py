@@ -30,7 +30,7 @@ class PoolSimulator(pymunk.Space):
         "pocket": 3
     }
 
-    def __init__(self, table_length=1200, ball_diameter=24, damping=0.35):
+    def __init__(self, table_width, table_height, ball_diameter, damping=0.35):
         super(PoolSimulator, self).__init__()
 
         self.is_finished = True
@@ -44,12 +44,13 @@ class PoolSimulator(pymunk.Space):
         self.pockets_coordinates = {}
 
         self.damping = damping
-        self.table_length = table_length
+        self.table_width = table_width
+        self.table_height = table_height
         self.ball_diameter = ball_diameter
 
 
         # create world
-        self.__create_table(self.table_length, self.ball_diameter)
+        self.__create_table()
         self.__setup_collision_handlers()
 
     def __setup_collision_handlers(self):
@@ -81,57 +82,62 @@ class PoolSimulator(pymunk.Space):
         self.balls_pocketed.append(ball_id)
         return True
 
-    def __create_table(self, inside_table_length, ball_diameter):
+    def __create_table(self):
 
         # shifts
+
+        ball_diameter = self.ball_diameter
+        inside_table_width = self.table_width
+        inside_table_height = self.table_height
+
         ball_radius = ball_diameter / 2
         center_shift = ball_diameter * 2
         corner_shift = center_shift / (2 ** 0.5)
 
-        inside_table_width = inside_table_length / 2
-        table_length = inside_table_length + 2 * corner_shift
+        # inside_table_width = inside_table_length / 2
         table_width = inside_table_width + 2 * corner_shift
+        table_height = inside_table_height + 2 * corner_shift
 
-        table_corners = {"Down_Left": (0.0, 0.0), "Top_Left": (0.0, table_width),
-                         "Top_Right": (table_length, table_width), "Down_Right": (table_length, 0.0)}
+        table_corners = {"Down_Left": (0.0, 0.0), "Top_Left": (0.0, table_height),
+                         "Top_Right": (table_width, table_height), "Down_Right": (table_width, 0.0)}
 
         cussions = {}
         cussions["Left"] = [
             (0, corner_shift),
-            (0, table_width - corner_shift),
+            (0, table_height - corner_shift),
             (ball_diameter, corner_shift + ball_diameter),
-            (ball_diameter, table_width - corner_shift - ball_diameter)
+            (ball_diameter, table_height - corner_shift - ball_diameter)
         ]
         cussions["Right"] = [
-            (table_length, corner_shift),
-            (table_length, table_width - corner_shift),
-            (table_length - ball_diameter, corner_shift + ball_diameter),
-            (table_length - ball_diameter, table_width - corner_shift - ball_diameter)
+            (table_width, corner_shift),
+            (table_width, table_height - corner_shift),
+            (table_width - ball_diameter, corner_shift + ball_diameter),
+            (table_width - ball_diameter, table_height - corner_shift - ball_diameter)
         ]
         cussions["Down_Left"] = [
             (corner_shift, 0),
-            (table_length / 2 - center_shift / 2, 0),
+            (table_width / 2 - center_shift / 2, 0),
             (corner_shift + ball_diameter, ball_diameter),
-            (table_length / 2 - center_shift / 2 - ball_diameter / 2, ball_diameter)
+            (table_width / 2 - center_shift / 2 - ball_diameter / 2, ball_diameter)
         ]
         cussions["Down_Right"] = [
-            (table_length / 2 + center_shift / 2, 0),
-            (table_length - corner_shift, 0),
-            (table_length / 2 + center_shift / 2 + ball_diameter / 2, ball_diameter),
-            (table_length - corner_shift - ball_diameter, ball_diameter)
+            (table_width / 2 + center_shift / 2, 0),
+            (table_width - corner_shift, 0),
+            (table_width / 2 + center_shift / 2 + ball_diameter / 2, ball_diameter),
+            (table_width - corner_shift - ball_diameter, ball_diameter)
         ]
         cussions["Up_Left"] = [
-            (corner_shift, table_width),
-            (table_length / 2 - center_shift / 2, table_width),
-            (corner_shift + ball_diameter, table_width - ball_diameter),
-            (table_length / 2 - center_shift / 2 - ball_diameter / 2, table_width - ball_diameter)
+            (corner_shift, table_height),
+            (table_width / 2 - center_shift / 2, table_height),
+            (corner_shift + ball_diameter, table_height - ball_diameter),
+            (table_width / 2 - center_shift / 2 - ball_diameter / 2, table_height - ball_diameter)
         ]
 
         cussions["Up_Right"] = [
-            (table_length / 2 + center_shift / 2, table_width),
-            (table_length - corner_shift, table_width),
-            (table_length / 2 + center_shift / 2 + ball_diameter / 2, table_width - ball_diameter),
-            (table_length - corner_shift - ball_diameter, table_width - ball_diameter)
+            (table_width / 2 + center_shift / 2, table_height),
+            (table_width - corner_shift, table_height),
+            (table_width / 2 + center_shift / 2 + ball_diameter / 2, table_height - ball_diameter),
+            (table_width - corner_shift - ball_diameter, table_height - ball_diameter)
         ]
 
         lines = [
@@ -157,8 +163,8 @@ class PoolSimulator(pymunk.Space):
         pockets_coordinates["Top_Right"] = tuple(map(operator.add, table_corners["Top_Right"], (-corner_shift / 2, -corner_shift /2)))
         pockets_coordinates["Down_Left"] = tuple(map(operator.add, table_corners["Down_Left"], (corner_shift / 2, corner_shift /2)))
         pockets_coordinates["Down_Right"] = tuple(map(operator.add, table_corners["Down_Right"], (-corner_shift / 2, corner_shift / 2)))
-        table_half_length = table_length / 2
-        pockets_coordinates["Top_Mid"] = (table_half_length, table_width)
+        table_half_length = table_width / 2
+        pockets_coordinates["Top_Mid"] = (table_half_length, table_height)
         pockets_coordinates["Down_Mid"] = (table_half_length, 0)
 
         pockets = [
@@ -220,7 +226,7 @@ class PoolSimulator(pymunk.Space):
                 self.balls_on_table[shape] = cueball_id
 
     def get_table_dimensions(self):
-        return self.table_length, self.table_length / 2
+        return self.table_width, self.table_height
 
     def get_ball_size(self):
         return self.ball_diameter
@@ -270,9 +276,9 @@ class PoolSimulator(pymunk.Space):
 
     def update(self, dt, step=True):
         if step:
-            self.step_update(dt)
+            return self.step_update(dt)
         else:
-            self.full_update()
+            return self.full_update()
 
     def full_update(self):
         while not self.is_finished:
@@ -360,9 +366,9 @@ class PoolSimulator(pymunk.Space):
 
         racking_error = 0.0
         ball_size = self.ball_diameter + racking_error
-        white_line_x = self.table_length / 4
-        blackball_spot_x = self.table_length - white_line_x
-        table_width = self.table_length / 2 + 30
+        white_line_x = self.table_width / 4
+        blackball_spot_x = self.table_width - white_line_x
+        table_width = self.table_width / 2 + 30
 
         ball_location_x = [white_line_x,
                            blackball_spot_x - 2 * ball_size,

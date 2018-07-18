@@ -1,13 +1,23 @@
 import random
-from threading import Semaphore
+import math
 
 
 class Player(object):
 
-    def init(self, player_id, table_dimensions, ball_size, pockets_position):
+    def __init__(self):
+        self.player_id = -1
+        self.table_dimensions = None
+        self.ball_size = None
+        self.pocket_positions = None
+        self.color_assignments = None
+        self.balls_on_table = []
+
+    def init(self, player_id, balls_on_table, table_dimensions, ball_size, pockets_position):
         self.player_id = player_id
+        self.balls_on_table = balls_on_table
         self.table_dimensions = table_dimensions
-        self.pockets_positions = pockets_position
+        self.ball_size = ball_size
+        self.pocket_positions = pockets_position
 
     def get_stroke(self):
         pass
@@ -15,13 +25,13 @@ class Player(object):
     def get_cueball_position(self):
         pass
 
-    def simulation_results(self, frame_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignment, is_foul, simulation_state):
+    def simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, is_foul, simulation_state):
         pass
 
     def opponent_cueball_reset(self, x, y):
         pass
 
-    def opponent_simulation_results(self, frame_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignment, is_foul, simulation_state):
+    def opponent_simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, is_foul, simulation_state):
         pass
 
     def on_key_press(self, symbol):
@@ -34,7 +44,75 @@ class Player(object):
         pass
 
 
-class AIPlayer(Player):
+class AbstractAIPlayer(Player):
+
+    def __init__(self):
+        super(Player).__init__()
+        self.stroke_number = 0
+        self.pocketed_balls = []
+        self.recently_pocketed_balls = []
+        self.cueball_hits = []
+        self.is_foul = False
+        self.simulation_state = None
+
+    def init(self, player_id, balls_on_table, table_dimensions, ball_size, pockets_position):
+        Player.init(self, player_id, balls_on_table, table_dimensions, ball_size, pockets_position)
+        self.stroke_number = 0
+        self.pocketed_balls = []
+        self.recently_pocketed_balls = []
+        self.cueball_hits = []
+        self.is_foul = False
+        self.simulation_state = None
+
+    def get_stroke(self):
+        pass
+
+    def get_cueball_position(self):
+        pass
+
+    def simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, is_foul, simulation_state):
+        self.stroke_number = stroke_number
+        self.pocketed_balls = pocketed_balls
+        self.recently_pocketed_balls = recently_pocketed_balls
+        self.balls_on_table = balls_on_table
+        self.pocketed_balls = pocketed_balls
+        self.cueball_hits = cueball_hits
+        self.color_assignments = color_assignments
+        self.is_foul = is_foul
+        self.simulation_state = simulation_state
+        self.on_simulation_finish()
+
+    def opponent_cueball_reset(self, x, y):
+        for ball in self.balls_on_table:
+            if ball[0] == 0:
+                self.balls_on_table.remove(ball)
+                break
+        self.balls_on_table.append((0, float(x), float(y)))
+        self.on_opponent_cueball_reset()
+
+    def opponent_simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, is_foul, simulation_state):
+        self.stroke_number = stroke_number
+        self.pocketed_balls = pocketed_balls
+        self.recently_pocketed_balls = recently_pocketed_balls
+        self.balls_on_table = balls_on_table
+        self.pocketed_balls = pocketed_balls
+        self.cueball_hits = cueball_hits
+        self.color_assignments = color_assignments
+        self.is_foul = is_foul
+        self.simulation_state = simulation_state
+        self.on_opponent_simulation_finish()
+
+    def on_simulation_finish(self):
+        pass
+
+    def on_opponent_simulation_finish(self):
+        pass
+
+    def on_opponent_cueball_reset(self):
+        pass
+
+
+class AIPlayer(AbstractAIPlayer):
 
     def get_stroke(self):
         angle = random.uniform(0, 3.14)
@@ -44,45 +122,50 @@ class AIPlayer(Player):
     def get_cueball_position(self):
         return 100, 100
 
-    def simulation_results(self, frame_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignment, is_foul, simulation_state):
-        return True
-
-    def opponent_cueball_reset(self, x, y):
+    def on_simulation_finish(self):
         pass
 
-    def opponent_simulation_results(self, frame_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignment, is_foul, simulation_state):
+    def on_opponent_simulation_finish(self):
+        pass
+
+    def on_opponent_cueball_reset(self):
         pass
 
 
-
-
-
-class ManualPlayer(Player):
-
-    def __init__(self):
-        self.sem1 = Semaphore(1)
-        self.sem1.acquire()
-        self.sem2 = Semaphore(1)
-        self.sem2.acquire()
-
-    def init(self, player_id, table_dimensions, ball_size, pockets_position):
-        pass
+class AISimulatorPlayer(AbstractAIPlayer):
 
     def get_stroke(self):
-        self.sem1.acquire()
-        pass
+
+        black_ball = None
+        cue_ball = None
+        # if self.color_assignments is None:
+        for id, x, y in self.balls_on_table:
+            if id == 8:
+                black_ball = (id, x, y)
+                continue
+            elif id == 0:
+                cue_ball = (id, x, y)
+
+        angle = math.atan2(cue_ball[2] - black_ball[2], cue_ball[1] - black_ball[1]) + 3.14
+        force = random.randint(10000, 25000)
+        return angle, force
 
     def get_cueball_position(self):
+        return random.randint(100, 200), random.randint(100, 200)
+
+    def on_simulation_finish(self):
         pass
 
-    def on_key_press(self, symbol):
+    def on_opponent_simulation_finish(self):
         pass
 
-    def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
+    def on_opponent_cueball_reset(self):
         pass
 
-    def on_mouse_press(self, x, y, button, modifiers):
-        pass
+
+
+
+
 
 #
 # class Player(object):

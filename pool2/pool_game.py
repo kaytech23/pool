@@ -1,18 +1,25 @@
 import pyglet
 import pymunk.pyglet_util
 import pool2.pool_learner_no_gui
+import pool2.pool_player
 
 from pyglet.window import key, mouse
 
+
 class Game(pyglet.window.Window):
+
+    TABLE_WIDTH = 1200
+    TABLE_HEIGHT = 600
+    BALL_SIZE = 24
 
     def __init__(self):
         super(Game, self).__init__(1300, 900, vsync=False)
 
-        player1 = pool2.pool_player.AIPlayer()
-        player2 = pool2.pool_player.AIPlayer()
+        # player1 = pool2.pool_player.AIPlayer()
+        player1 = pool2.pool_player.AISimulatorPlayer()
+        player2 = pool2.pool_player.AISimulatorPlayer()
 
-        self.model = pool2.pool_learner_no_gui.PoolGameModel(player1, player2)
+        self.model = pool2.pool_learner_no_gui.PoolGameModel(player1, player2, self.TABLE_WIDTH, self.TABLE_HEIGHT, self.BALL_SIZE, real_time=False)
 
         pyglet.gl.glClearColor(0, 0.5, 0, 1)
         pyglet.clock.schedule_interval(self.update, 1 / 60.0)
