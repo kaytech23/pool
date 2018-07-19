@@ -25,13 +25,13 @@ class Player(object):
     def get_cueball_position(self):
         pass
 
-    def simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, is_foul, simulation_state):
+    def simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, simulation_state):
         pass
 
     def opponent_cueball_reset(self, x, y):
         pass
 
-    def opponent_simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, is_foul, simulation_state):
+    def opponent_simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, simulation_state):
         pass
 
     def on_key_press(self, symbol):
@@ -48,6 +48,7 @@ class AbstractAIPlayer(Player):
 
     def __init__(self):
         super(Player).__init__()
+        self.last_player_id = -1
         self.stroke_number = 0
         self.pocketed_balls = []
         self.recently_pocketed_balls = []
@@ -70,7 +71,8 @@ class AbstractAIPlayer(Player):
     def get_cueball_position(self):
         pass
 
-    def simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, is_foul, simulation_state):
+    def simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, simulation_state):
+        self.last_player_id = player_id
         self.stroke_number = stroke_number
         self.pocketed_balls = pocketed_balls
         self.recently_pocketed_balls = recently_pocketed_balls
@@ -78,7 +80,6 @@ class AbstractAIPlayer(Player):
         self.pocketed_balls = pocketed_balls
         self.cueball_hits = cueball_hits
         self.color_assignments = color_assignments
-        self.is_foul = is_foul
         self.simulation_state = simulation_state
         self.on_simulation_finish()
 
@@ -90,7 +91,8 @@ class AbstractAIPlayer(Player):
         self.balls_on_table.append((0, float(x), float(y)))
         self.on_opponent_cueball_reset()
 
-    def opponent_simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, is_foul, simulation_state):
+    def opponent_simulation_results(self, player_id, stroke_number, balls_on_table, pocketed_balls, recently_pocketed_balls, cueball_hits, color_assignments, simulation_state):
+        self.last_player_id = player_id
         self.stroke_number = stroke_number
         self.pocketed_balls = pocketed_balls
         self.recently_pocketed_balls = recently_pocketed_balls
@@ -98,7 +100,6 @@ class AbstractAIPlayer(Player):
         self.pocketed_balls = pocketed_balls
         self.cueball_hits = cueball_hits
         self.color_assignments = color_assignments
-        self.is_foul = is_foul
         self.simulation_state = simulation_state
         self.on_opponent_simulation_finish()
 

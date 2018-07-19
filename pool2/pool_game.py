@@ -17,7 +17,7 @@ class Game(pyglet.window.Window):
 
         # player1 = pool2.pool_player.AIPlayer()
         player1 = pool2.pool_player.AISimulatorPlayer()
-        player2 = pool2.pool_player.AISimulatorPlayer()
+        player2 = pool2.pool_player.AIPlayer()
 
         self.model = pool2.pool_learner_no_gui.PoolGameModel(player1, player2, self.TABLE_WIDTH, self.TABLE_HEIGHT, self.BALL_SIZE, real_time=False)
 

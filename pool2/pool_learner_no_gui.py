@@ -12,12 +12,13 @@ class GameState(Enum):
     GameOver = 4
 
 
-class SimulationState(Enum):
+class SimulationResult(Enum):
     Continue = 0
     Switch = 1
-    End_P1Won = 2
-    End_P2Won = 3
-    Terminate = 4
+    Foul = 2
+    P0_Wins = 3
+    P1_Wins = 4
+    Terminate = 5
 
 
 def start_in_thread(function_delegate):
@@ -39,8 +40,9 @@ class PoolGameModel(object):
         self.balls_pocketed = [] # id, player_id
         self.balls_left = [0, 0]
         self.color_assignments = None # 0,1 or 1,0
-        self.foul = False
+        # self.foul = False
         self.state = GameState.Start
+        self.simulation_result = SimulationResult.Continue
         self.pool_simulator = pool2.pool_simulator.PoolSimulator(table_width, table_height, ball_size)
 
         self.real_time = real_time
@@ -96,9 +98,11 @@ class PoolGameModel(object):
     def process_player_move(self):
         print("=====>  Player id: " + str(self.player_id))
         print("Stroke#: " + str(self.stroke_counter))
+        print("color assignments: " + str(self.color_assignments))
+        print("left [color,stripe] " + str(self.balls_left))
         player = self.players[self.player_id]
         opponent = self.players[self.opponent_id]
-        if self.foul:
+        if self.simulation_result == SimulationResult.Foul:
             x, y = player.get_cueball_position()
             self.pool_simulator.reset_cueball(x, y)
             opponent.opponent_cueball_reset(x, y)
@@ -113,37 +117,40 @@ class PoolGameModel(object):
         # process balls
         self.balls_on_table = balls_on_table
 
-        simulation_state = self.check_simulation_state(balls_on_table, recently_pocketed_balls, cueball_hits)
+        self.simulation_result = self.check_simulation_state(balls_on_table, recently_pocketed_balls, cueball_hits)
 
+        print("===> simulation result")
         print("color assignments: " + str(self.color_assignments))
         print("left [color,stripe] " + str(self.balls_left))
         print("potted: " + str(recently_pocketed_balls))
         print("cue hits: " + str(cueball_hits))
-        print("foul: " + str(self.foul))
-        print("state: " + str(simulation_state))
+        # print("foul: " + str(self.foul))
+        print("state: " + str(self.simulation_result))
+        print("")
 
-        # simulation_state = SimulationState.Continue
+        # simulation_result = SimulationState.Continue
         #
         # if len(recently_pocketed_balls) == 0:
-        #     simulation_state = SimulationState.Switch
+        #     simulation_result = SimulationState.Switch
         # else:
         #     for ball in recently_pocketed_balls:
         #         if ball == 0:
         #             self.foul = True
-        #             simulation_state = SimulationState.Switch
+        #             simulation_result = SimulationState.Switch
         #         elif ball == 8:
-        #             simulation_state = SimulationState.End_P2Won
+        #             simulation_result = SimulationState.End_P2Won
         #         else:
         #             # check color assignments
         #             if ball < 8 and self.player_id == 0:
         #                 self.foul = True
-        #                 simulation_state = SimulationState.Switch
+        #                 simulation_result = SimulationState.Switch
         #             elif ball > 8 and self.player_id == 1:
         #                 self.foul = True
-        #                 simulation_state = SimulationState.Switch
+        #                 simulation_result = SimulationState.Switch
         #         # add to pocketed
         #         self.balls_pocketed.append((ball, self.player_id))
 
+        # todo result should be a class??
         self.players[self.player_id].simulation_results(self.player_id,
                                                         self.stroke_counter,
                                                         self.balls_on_table,
@@ -151,8 +158,8 @@ class PoolGameModel(object):
                                                         recently_pocketed_balls,
                                                         cueball_hits,
                                                         self.color_assignments,
-                                                        self.foul,
-                                                        simulation_state)
+                                                        # self.foul,
+                                                        self.simulation_result)
 
         self.players[self.opponent_id].opponent_simulation_results(self.opponent_id,
                                                                    self.stroke_counter,
@@ -161,12 +168,12 @@ class PoolGameModel(object):
                                                                    recently_pocketed_balls,
                                                                    cueball_hits,
                                                                    self.color_assignments,
-                                                                   self.foul,
-                                                                   simulation_state)
-        if simulation_state == SimulationState.Switch:
+                                                                   # self.foul,
+                                                                   self.simulation_result)
+        if self.simulation_result == SimulationResult.Switch or self.simulation_result == SimulationResult.Foul:
             self.switch_players()
             self.state = GameState.PlayerMove
-        elif simulation_state == SimulationState.End_P2Won or simulation_state == SimulationState.End_P1Won:
+        elif self.simulation_result == SimulationResult.P1_Wins or self.simulation_result == SimulationResult.P0_Wins:
             self.state = GameState.GameOver
         else:
             self.state = GameState.PlayerMove
@@ -174,70 +181,60 @@ class PoolGameModel(object):
         if self.stroke_counter % 100 == 0:
             print(self.stroke_counter)
             print(self.state)
-            print(simulation_state)
-            print(self.foul)
+            print(self.simulation_result)
 
     def check_simulation_state(self, balls_on_table, recently_pocketed_balls, cueball_hits):
 
-        self.balls_on_table = balls_on_table
-
-        simulation_state = SimulationState.Continue
-        self.foul = False
+        simulation_result = SimulationResult.Continue
 
         if len(cueball_hits) == 0:
-            self.foul = True
-            simulation_state = SimulationState.Switch
+            simulation_result = SimulationResult.Foul
         else:
             if self.color_assignments is None:
-                # if cueball_hits[0] == 8
+                if cueball_hits[0] == 8:
+                    simulation_result = SimulationResult.Foul
                 pass
             else:
                 color_assignment = self.color_assignments[self.player_id]
                 is_ready_for_the_black = self.balls_left[self.player_id] == 0
-                if color_assignment == self.FULL_COLOR:
-                    if is_ready_for_the_black:
-                        ball_index = 9
-                    else:
-                        ball_index = 8
-                    if cueball_hits[0] > ball_index:
-                        self.foul = True
-                        simulation_state = SimulationState.Switch
+
+                if not is_ready_for_the_black and cueball_hits[0] == 8:
+                    simulation_result = SimulationResult.Foul
+                elif color_assignment == self.FULL_COLOR:
+                    if cueball_hits[0] > 8:
+                        simulation_result = SimulationResult.Foul
                         pass
-                else:
-                    if is_ready_for_the_black:
-                        ball_index = 7
-                    else:
-                        ball_index = 8
-                    if cueball_hits[0] < ball_index:
-                        self.foul = True
-                        simulation_state = SimulationState.Switch
-                    pass
+                elif color_assignment == self.STRIPE_COLOR:
+                    if cueball_hits[0] < 8:
+                        simulation_result = SimulationResult.Foul
 
         if len(recently_pocketed_balls) > 0:
             for ball in recently_pocketed_balls:
                 is_ready_for_the_black = self.balls_left[self.player_id] == 0
                 if ball == 0:
-                    self.foul = True
-                    simulation_state = SimulationState.Switch
+                    simulation_result = SimulationResult.Foul
                     pass
                 elif ball == 8:
+                    winner_helper = {
+                        0: SimulationResult.P0_Wins,
+                        1: SimulationResult.P1_Wins
+                    }
                     if is_ready_for_the_black:
-                        return SimulationState.End_P1Won
+                        return winner_helper[self.player_id]
                     else:
-                        return SimulationState.End_P1Won
+                        return winner_helper[self.opponent_id]
                     pass
                 elif ball < 8:
                     self.balls_left[self.FULL_COLOR] -= 1
                     if self.color_assignments is not None and color_assignment != self.FULL_COLOR:
-                        self.foul = True
-                        simulation_state = SimulationState.Switch
+                        simulation_result = SimulationResult.Foul
                 elif ball > 8:
                     self.balls_left[self.STRIPE_COLOR] -= 1
                     if self.color_assignments is not None and color_assignment != self.STRIPE_COLOR:
-                        self.foul = True
-                        simulation_state = SimulationState.Switch
+                        simulation_result = SimulationResult.Foul
 
-            if self.color_assignments is None and not self.foul:
+            # todo: false calor assigment
+            if self.color_assignments is None and not simulation_result == SimulationResult.Foul:
                 if recently_pocketed_balls[0] < 8:
                     self.color_assignments = [0, 0]
                     self.color_assignments[self.player_id] = self.FULL_COLOR
@@ -247,6 +244,7 @@ class PoolGameModel(object):
                     self.color_assignments[self.player_id] = self.STRIPE_COLOR
                     self.color_assignments[self.opponent_id] = self.FULL_COLOR
                     pass
-        else:
-            simulation_state = SimulationState.Switch
-        return simulation_state
+        elif simulation_result != simulation_result.Foul:
+            simulation_result = SimulationResult.Switch
+
+        return simulation_result
