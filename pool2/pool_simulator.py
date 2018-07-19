@@ -1,5 +1,6 @@
 import pymunk
 import random
+import math
 import numpy as np
 # https://github.com/viblo/pymunk/blob/master/examples/shapes_for_draw_demos.py
 
@@ -232,7 +233,7 @@ class PoolSimulator(pymunk.Space):
         return self.ball_diameter
 
     def get_pockets_position(self):
-        return self.pockets_coordinates.values()
+        return self.pockets_coordinates
 
     def get_cueball_position(self):
         id, shape = self.cue_ball
@@ -363,6 +364,11 @@ class PoolSimulator(pymunk.Space):
         return random_balls
 
     def pool_rack_em_up(self):
+
+        balls = [(0, 100, 100), (8, random.randint(500, 1000), random.randint(300, 600))]
+        return balls
+
+    def pool_rack_em_up1(self):
 
         racking_error = 0.0
         ball_size = self.ball_diameter + racking_error

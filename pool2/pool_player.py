@@ -103,6 +103,11 @@ class AbstractAIPlayer(Player):
         self.simulation_state = simulation_state
         self.on_opponent_simulation_finish()
 
+    def get_my_color_assignment(self):
+        if self.color_assignments is None:
+            return None
+        return self.color_assignments[self.player_id]
+
     def on_simulation_finish(self):
         pass
 
@@ -147,8 +152,35 @@ class AISimulatorPlayer(AbstractAIPlayer):
             elif id == 0:
                 cue_ball = (id, x, y)
 
-        angle = math.atan2(cue_ball[2] - black_ball[2], cue_ball[1] - black_ball[1]) + 3.14
-        force = random.randint(10000, 25000)
+        for key, pocket in self.pocket_positions.items():
+            # pocket = self.pocket_positions["Top_Right"]
+            # pocket = (pocket[0] - 15, pocket[1] - 15)
+            angle1 = math.atan2(pocket[1] - black_ball[2], pocket[0] - black_ball[1])
+            if 0 < angle1 < 1.57:
+                print(key)
+                print(angle1)
+                break
+
+        if black_ball[1] < cue_ball[1]:
+            x = black_ball[1] + math.cos(angle1) * self.ball_size
+        else:
+            x = black_ball[1] - math.cos(angle1) * self.ball_size
+
+        if black_ball[2] < cue_ball[2]:
+            y = black_ball[2] + math.sin(angle1) * self.ball_size
+        else:
+            y = black_ball[2] - math.sin(angle1) * self.ball_size
+
+        # y = math.sin(angle1) * self.ball_size
+
+        ghost_ball = (x, y)
+
+        print(pocket)
+        print(black_ball)
+        print(ghost_ball)
+
+        angle = math.atan2(cue_ball[2] - ghost_ball[1], cue_ball[1] - ghost_ball[0]) + 3.14
+        force = random.randint(10000, 18000)
         return angle, force
 
     def get_cueball_position(self):

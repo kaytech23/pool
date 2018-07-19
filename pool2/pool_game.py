@@ -5,6 +5,7 @@ import pool2.pool_player
 
 from pyglet.window import key, mouse
 
+# https://www.quora.com/How-do-you-calculate-what-angle-to-hit-a-pool-ball
 
 class Game(pyglet.window.Window):
 
@@ -17,9 +18,9 @@ class Game(pyglet.window.Window):
 
         # player1 = pool2.pool_player.AIPlayer()
         player1 = pool2.pool_player.AISimulatorPlayer()
-        player2 = pool2.pool_player.AIPlayer()
+        player2 = pool2.pool_player.AISimulatorPlayer()
 
-        self.model = pool2.pool_learner_no_gui.PoolGameModel(player1, player2, self.TABLE_WIDTH, self.TABLE_HEIGHT, self.BALL_SIZE, real_time=False)
+        self.model = pool2.pool_learner_no_gui.PoolGameModel(player1, player2, self.TABLE_WIDTH, self.TABLE_HEIGHT, self.BALL_SIZE, real_time=True)
 
         pyglet.gl.glClearColor(0, 0.5, 0, 1)
         pyglet.clock.schedule_interval(self.update, 1 / 60.0)
